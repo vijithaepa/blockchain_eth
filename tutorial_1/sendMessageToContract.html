@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Deploy a Remix Contract</title>
+
+    <link rel="stylesheet" href="sendMessageToContract.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+</head>
+
+<body>
+<div>
+    <h1>Ethereum Secret Messenger</h1>
+    <hr>
+
+    <label for='userInput'>This site writes a secret message to the Ethereum
+        blockchain!</label>
+    <input id="userInput" type="text">
+
+    <button id="setMessageButton">Set secret message</button>
+    <button id="getMessageButton">Get secret message</button>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.slim.js"
+        integrity="sha256-HwWONEZrpuoh951cQD1ov2HUK5zA5DwJ1DNUXaM6FsY="
+        crossorigin="anonymous"></script>
+
+<script>
+
+    // Connect a the web3 provider
+    // if (typeof web3 !== 'undefined') {
+    //     web3 = new Web3(web3.currentProvider);
+    // } else {
+    //     web3 = new Web3(new Web3.providers.HttpProvider("https://rinkeby.infura.io/v3/2ca4f846bd9e4808bf8ea2e86948924c"));
+    // }
+
+    // web3 = new Web3(Web3.givenProvider || "https://rinkeby.infura.io/v3/2ca4f846bd9e4808bf8ea2e86948924c");
+    // let web3 = new Web3("ws://localhost:7545"); // Local ganache UI
+    let web3Provider
+    if (window.ethereum) {
+        web3Provider = window.ethereum;
+        try {
+            // Request account access
+            window.ethereum.enable();
+        } catch (error) {
+            // User denied account access...
+            console.error("User denied account access")
+        }
+    }
+    // Legacy dapp browsers...
+    else if (window.web3) {
+        web3Provider = window.web3.currentProvider;
+    }
+    // If no injected web3 instance is detected, fall back to Ganache
+    else {
+        web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+    }
+    web3 = new Web3(web3Provider);
+
+
+    // Set a default account
+    // web3.eth.defaultAccount = web3.eth.accounts[0];
+    web3.eth.defaultAccount = '0xb8ee3a86C418e9eB3E9168CF0c1C03E2961Aa8ca'
+    console.log('Provider', web3, web3.eth.accounts[0])
+
+    web3.eth.getAccounts(function (error, accounts) {
+        if (error) {
+            console.log(error);
+        }
+        console.log('Accounts ', accounts)
+        var account = accounts[0];
+    })
+    // Get the contract address and abi
+    const RemixContract = new web3.eth.Contract([
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "name": "msg",
+                    "type": "string"
+                }
+            ],
+            "name": "setMessage",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "getMessage",
+            "outputs": [
+                {
+                    "name": "",
+                    "type": "string"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ],'0xAbef34C4a5b1e19a43bc6f8f9549fFD542f89eFe');
+    console.log('Contract', RemixContract.defaultAccount)
+
+    // // Get the contract abi
+    // var myMessage = RemixContract.at('CONTRACT ADDRESS HERE');
+
+    console.log('RemixContract ', RemixContract.options.address, RemixContract);
+
+    $("#setMessageButton").click(function () {
+        let msg = $("#userInput").val()
+        let txnObj = RemixContract.methods.setMessage(msg);
+        RemixContract.methods.setMessage(msg).call()
+            .then(function(receipt){
+                console.log('Call back receipt ', receipt, txnObj)
+            });
+        console.log('Send message ', msg, txnObj)
+    });
+
+    $("#getMessageButton").click(function () {
+        const msg = RemixContract.methods.getMessage().call()
+        .then(result => {
+            console.log('Promise return ', result)
+        })
+        // OR const msg = RemixContract.methods.getMessage()
+        // console.log('The return message ', msg)
+    });
+
+</script>
+</body>
+
+</html>
